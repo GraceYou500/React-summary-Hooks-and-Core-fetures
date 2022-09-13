@@ -1,17 +1,38 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useReducer,
+  useRef,
+} from "react";
 
 import IngredientForm from "./IngredientForm";
 import Search from "./Search";
 import IngredientList from "./IngredientList";
 import ErrorModal from "../UI/ErrorModal";
 
+const ingredientReducer = (currentIngredients, action) => {
+  switch (action.type) {
+    case "SET":
+      return action.ingredients;
+    case "ADD":
+      return [...currentIngredients, action.ingredient];
+    case "DELETE":
+      return currentIngredients.filter((ing) => ing.id !== action.id);
+    default:
+      throw new Error("Should not get there!");
+  }
+};
+
 function Ingredients() {
-  const [ingredients, setIngredients] = useState([]);
+  const [ingredients, dispatch] = useReducer(ingredientReducer, []);
+  // const [ingredients, setIngredients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState();
 
   const filteredIngredientsHandler = useCallback((filteredIngs) => {
-    setIngredients(filteredIngs);
+    // setIngredients(filteredIngs);
+    dispatch({ type: "SET", ingredients: filteredIngs });
   }, []);
 
   const obj = { a: 1, b: 2 };
@@ -51,13 +72,17 @@ function Ingredients() {
       })
       .then((data) => {
         console.log(data);
-        return setIngredients((prevIng) => [
-          ...prevIng,
-          {
-            id: data.name,
-            ...ingredient,
-          },
-        ]);
+        // return setIngredients((prevIng) => [
+        //   ...prevIng,
+        //   {
+        //     id: data.name,
+        //     ...ingredient,
+        //   },
+        // ]);
+        return dispatch({
+          type: "ADD",
+          ingredient: { id: data.name, ...ingredient },
+        });
       });
   };
 
@@ -71,9 +96,10 @@ function Ingredients() {
     )
       .then((res) => {
         setIsLoading(false);
-        setIngredients((prevIng) =>
-          [...prevIng].filter((ig) => ig.id !== ingId)
-        );
+        // setIngredients((prevIng) =>
+        //   [...prevIng].filter((ig) => ig.id !== ingId)
+        // );
+        dispatch({ type: "DELETE", id: ingId });
       })
       .catch((err) => {
         setError("Sth wrong!");
