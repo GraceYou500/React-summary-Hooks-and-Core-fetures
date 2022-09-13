@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import IngredientForm from "./IngredientForm";
 import Search from "./Search";
@@ -7,24 +7,30 @@ import IngredientList from "./IngredientList";
 function Ingredients() {
   const [ingredients, setIngredients] = useState([]);
 
-  useEffect(() => {
-    fetch(
-      "https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients.json"
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-        const loadedIngs = [];
-        for (const key in data) {
-          loadedIngs.push({
-            id: key,
-            title: data[key].title,
-            amount: data[key].amount,
-          });
-        }
-        setIngredients(loadedIngs);
-      });
+  const filteredIngredientsHandler = useCallback((filteredIngs) => {
+    setIngredients(filteredIngs);
   }, []);
+
+  const obj = { a: 1, b: 2 };
+
+  // useEffect(() => {
+  //   fetch(
+  //     "https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients.json"
+  //   )
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log(data);
+  //       const loadedIngs = [];
+  //       for (const key in data) {
+  //         loadedIngs.push({
+  //           id: key,
+  //           title: data[key].title,
+  //           amount: data[key].amount,
+  //         });
+  //       }
+  //       setIngredients(loadedIngs);
+  //     });
+  // }, []);
 
   const addIngredientHandler = (ingredient) => {
     fetch(
@@ -49,7 +55,14 @@ function Ingredients() {
   };
 
   const onRemoveIngHandler = (ingId) => {
-    setIngredients((prevIng) => [...prevIng].filter((ig) => ig.id !== ingId));
+    fetch(
+      `https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients/${ingId}.json`,
+      {
+        method: "DELETE",
+      }
+    ).then((res) =>
+      setIngredients((prevIng) => [...prevIng].filter((ig) => ig.id !== ingId))
+    );
   };
 
   return (
@@ -57,7 +70,7 @@ function Ingredients() {
       <IngredientForm onAddIngredient={addIngredientHandler} />
 
       <section>
-        <Search />
+        <Search onLoadIngredients={filteredIngredientsHandler} obj={obj} />
         <IngredientList
           ingredients={ingredients}
           onRemoveItem={onRemoveIngHandler}
