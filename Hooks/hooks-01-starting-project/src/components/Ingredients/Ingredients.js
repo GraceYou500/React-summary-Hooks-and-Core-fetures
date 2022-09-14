@@ -1,15 +1,9 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useReducer,
-  useRef,
-} from "react";
-
+import React, { useCallback, useEffect, useMemo, useReducer } from "react";
 import IngredientForm from "./IngredientForm";
 import Search from "./Search";
 import IngredientList from "./IngredientList";
 import ErrorModal from "../UI/ErrorModal";
+import useHttp from "../../hooks/http";
 
 const ingredientReducer = (currentIngredients, action) => {
   switch (action.type) {
@@ -25,10 +19,16 @@ const ingredientReducer = (currentIngredients, action) => {
 };
 
 function Ingredients() {
+  const { isLoading, data, error, sendRequest, reqExtra } = useHttp();
   const [ingredients, dispatch] = useReducer(ingredientReducer, []);
   // const [ingredients, setIngredients] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState();
+
+  // const [isLoading, setIsLoading] = useState(false);
+  // const [error, setError] = useState();
+
+  useEffect(() => {
+    dispatch({ type: "DELETE", id: reqExtra });
+  }, [data, reqExtra]);
 
   const filteredIngredientsHandler = useCallback((filteredIngs) => {
     // setIngredients(filteredIngs);
@@ -56,60 +56,65 @@ function Ingredients() {
   //     });
   // }, []);
 
-  const addIngredientHandler = (ingredient) => {
-    setIsLoading(true);
-    fetch(
+  const addIngredientHandler = useCallback((ingredient) => {
+    // dispatchHttp({ type: "SEND" });
+    // fetch(
+    //   "https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients.json",
+    //   {
+    //     method: "POST",
+    //     body: JSON.stringify(ingredient),
+    //     headers: { "Content-Type": "application/json" },
+    //   }
+    // )
+    //   .then((response) => {
+    //     dispatchHttp({ type: "RESPONSE" });
+    //     return response.json();
+    //   })
+    //   .then((data) => {
+    //     console.log(data);
+    //     // return setIngredients((prevIng) => [
+    //     //   ...prevIng,
+    //     //   {
+    //     //     id: data.name,
+    //     //     ...ingredient,
+    //     //   },
+    //     // ]);
+    //     return dispatch({
+    //       type: "ADD",
+    //       ingredient: { id: data.name, ...ingredient },
+    //     });
+    //   });
+    sendRequest(
       "https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients.json",
-      {
-        method: "POST",
-        body: JSON.stringify(ingredient),
-        headers: { "Content-Type": "application/json" },
-      }
-    )
-      .then((response) => {
-        setIsLoading(false);
-        return response.json();
-      })
-      .then((data) => {
-        console.log(data);
-        // return setIngredients((prevIng) => [
-        //   ...prevIng,
-        //   {
-        //     id: data.name,
-        //     ...ingredient,
-        //   },
-        // ]);
-        return dispatch({
-          type: "ADD",
-          ingredient: { id: data.name, ...ingredient },
-        });
-      });
-  };
+      "POST",
+      JSON.stringify(ingredient)
+    );
+  }, []);
 
-  const onRemoveIngHandler = (ingId) => {
-    setIsLoading(true);
-    fetch(
-      `https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients/${ingId}.json`,
-      {
-        method: "DELETE",
-      }
-    )
-      .then((res) => {
-        setIsLoading(false);
-        // setIngredients((prevIng) =>
-        //   [...prevIng].filter((ig) => ig.id !== ingId)
-        // );
-        dispatch({ type: "DELETE", id: ingId });
-      })
-      .catch((err) => {
-        setError("Sth wrong!");
-        setIsLoading(false);
-      });
-  };
+  const onRemoveIngHandler = useCallback(
+    (ingId) => {
+      sendRequest(
+        `https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients/${ingId}.json`,
+        "DELETE",
+        null,
+        ingId
+      );
+    },
+    [sendRequest]
+  );
 
-  const clearError = () => {
-    setError(null);
-  };
+  const clearError = useCallback(() => {
+    // dispatchHttp({ type: "CLEAR" });
+  }, []);
+
+  const ingredientList = useMemo(() => {
+    return (
+      <IngredientList
+        ingredients={ingredients}
+        onRemoveItem={onRemoveIngHandler}
+      />
+    );
+  }, [ingredients, onRemoveIngHandler]);
 
   return (
     <div className="App">
@@ -121,10 +126,7 @@ function Ingredients() {
 
       <section>
         <Search onLoadIngredients={filteredIngredientsHandler} obj={obj} />
-        <IngredientList
-          ingredients={ingredients}
-          onRemoveItem={onRemoveIngHandler}
-        />
+        {ingredientList}
         {/* Need to add list here! */}
       </section>
     </div>
