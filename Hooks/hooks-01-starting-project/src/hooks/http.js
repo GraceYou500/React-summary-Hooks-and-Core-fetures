@@ -1,50 +1,76 @@
 import { useReducer, useCallback } from "react";
 
+const initialState = {
+  isLoading: false,
+  error: null,
+  data: null,
+  extra: null,
+  identifier: null,
+};
+
 const httpReducer = (curHttpState, action) => {
   switch (action.type) {
     case "SEND":
-      return { isLoading: true, error: null, data: null, extra: action.extra };
+      return {
+        isLoading: true,
+        error: null,
+        data: null,
+        extra: null,
+        identifier: action.identifier,
+      };
     case "RESPONSE":
-      return { ...curHttpState, isLoading: false, data: action.responseData };
+      return {
+        ...curHttpState,
+        isLoading: false,
+        data: action.responseData,
+        extra: action.extra,
+      };
     case "ERROR":
       return { isLoading: false, error: action.errorData };
+
     case "CLEAR":
-      return { ...curHttpState, error: null };
+      return initialState;
     default:
       throw new Error("Should not fet there!");
   }
 };
 
 const useHttp = () => {
-  const [httpState, dispatchHttp] = useReducer(httpReducer, {
-    isLoading: false,
-    error: null,
-    data: null,
-    extra: null,
-  });
+  const [httpState, dispatchHttp] = useReducer(httpReducer, initialState);
 
-  const sendRequest = useCallback((url, method, body, reqExtra) => {
-    dispatchHttp({ type: "SEND", extra: reqExtra });
-    fetch(url, {
-      method: method,
-      body: body,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((res) => {
-        // setIngredients((prevIng) =>
-        //   [...prevIng].filter((ig) => ig.id !== ingId)
-        // );
-        return res.json();
-      })
-      .then((responseData) => {
-        dispatchHttp({ type: "RESPONSE", responseData: responseData });
-      })
-      .catch((err) => {
-        dispatchHttp({ type: "ERROR", errorData: err.message });
-      });
+  const clear = useCallback(() => {
+    dispatchHttp({ type: "CLEAR" });
   }, []);
+
+  const sendRequest = useCallback(
+    (url, method, body, reqExtra, Reqidentifier) => {
+      dispatchHttp({ type: "SEND", identifier: Reqidentifier });
+      fetch(url, {
+        method: method,
+        body: body,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => {
+          // setIngredients((prevIng) =>
+          //   [...prevIng].filter((ig) => ig.id !== ingId)
+          // );
+          return res.json();
+        })
+        .then((responseData) => {
+          dispatchHttp({
+            type: "RESPONSE",
+            responseData: responseData,
+            extra: reqExtra,
+          });
+        })
+        .catch((err) => {
+          dispatchHttp({ type: "ERROR", errorData: err.message });
+        });
+    },
+    []
+  );
 
   return {
     isLoading: httpState.isLoading,
@@ -52,6 +78,8 @@ const useHttp = () => {
     error: httpState.error,
     sendRequest: sendRequest,
     reqExtra: httpState.extra,
+    reqIdentifier: httpState.identifier,
+    clear: clear,
   };
 };
 

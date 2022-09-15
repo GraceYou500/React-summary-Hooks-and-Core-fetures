@@ -19,7 +19,15 @@ const ingredientReducer = (currentIngredients, action) => {
 };
 
 function Ingredients() {
-  const { isLoading, data, error, sendRequest, reqExtra } = useHttp();
+  const {
+    isLoading,
+    data,
+    error,
+    sendRequest,
+    reqExtra,
+    reqIdentifier,
+    clear,
+  } = useHttp();
   const [ingredients, dispatch] = useReducer(ingredientReducer, []);
   // const [ingredients, setIngredients] = useState([]);
 
@@ -27,8 +35,12 @@ function Ingredients() {
   // const [error, setError] = useState();
 
   useEffect(() => {
-    dispatch({ type: "DELETE", id: reqExtra });
-  }, [data, reqExtra]);
+    if (!isLoading && !error && reqIdentifier === "REMOVE_INGREDIENT") {
+      dispatch({ type: "DELETE", id: reqExtra });
+    } else if (!isLoading && !error && reqIdentifier === "ADD_INGREDIENT") {
+      dispatch({ type: "ADD", ingredient: { id: data.name, ...reqExtra } });
+    }
+  }, [data, reqExtra, reqIdentifier, isLoading, error]);
 
   const filteredIngredientsHandler = useCallback((filteredIngs) => {
     // setIngredients(filteredIngs);
@@ -56,40 +68,45 @@ function Ingredients() {
   //     });
   // }, []);
 
-  const addIngredientHandler = useCallback((ingredient) => {
-    // dispatchHttp({ type: "SEND" });
-    // fetch(
-    //   "https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients.json",
-    //   {
-    //     method: "POST",
-    //     body: JSON.stringify(ingredient),
-    //     headers: { "Content-Type": "application/json" },
-    //   }
-    // )
-    //   .then((response) => {
-    //     dispatchHttp({ type: "RESPONSE" });
-    //     return response.json();
-    //   })
-    //   .then((data) => {
-    //     console.log(data);
-    //     // return setIngredients((prevIng) => [
-    //     //   ...prevIng,
-    //     //   {
-    //     //     id: data.name,
-    //     //     ...ingredient,
-    //     //   },
-    //     // ]);
-    //     return dispatch({
-    //       type: "ADD",
-    //       ingredient: { id: data.name, ...ingredient },
-    //     });
-    //   });
-    sendRequest(
-      "https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients.json",
-      "POST",
-      JSON.stringify(ingredient)
-    );
-  }, []);
+  const addIngredientHandler = useCallback(
+    (ingredient) => {
+      // dispatchHttp({ type: "SEND" });
+      // fetch(
+      //   "https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients.json",
+      //   {
+      //     method: "POST",
+      //     body: JSON.stringify(ingredient),
+      //     headers: { "Content-Type": "application/json" },
+      //   }
+      // )
+      //   .then((response) => {
+      //     dispatchHttp({ type: "RESPONSE" });
+      //     return response.json();
+      //   })
+      //   .then((data) => {
+      //     console.log(data);
+      //     // return setIngredients((prevIng) => [
+      //     //   ...prevIng,
+      //     //   {
+      //     //     id: data.name,
+      //     //     ...ingredient,
+      //     //   },
+      //     // ]);
+      //     return dispatch({
+      //       type: "ADD",
+      //       ingredient: { id: data.name, ...ingredient },
+      //     });
+      //   });
+      sendRequest(
+        "https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients.json",
+        "POST",
+        JSON.stringify(ingredient),
+        ingredient,
+        "ADD_INGREDIENT"
+      );
+    },
+    [sendRequest]
+  );
 
   const onRemoveIngHandler = useCallback(
     (ingId) => {
@@ -97,15 +114,12 @@ function Ingredients() {
         `https://react-hooks-update-2bfc7-default-rtdb.firebaseio.com/ingredients/${ingId}.json`,
         "DELETE",
         null,
-        ingId
+        ingId,
+        "REMOVE_INGREDIENT"
       );
     },
     [sendRequest]
   );
-
-  const clearError = useCallback(() => {
-    // dispatchHttp({ type: "CLEAR" });
-  }, []);
 
   const ingredientList = useMemo(() => {
     return (
@@ -118,7 +132,7 @@ function Ingredients() {
 
   return (
     <div className="App">
-      {error && <ErrorModal onClose={clearError}>{error}</ErrorModal>}
+      {error && <ErrorModal onClose={clear}>{error}</ErrorModal>}
       <IngredientForm
         onAddIngredient={addIngredientHandler}
         loading={isLoading}
